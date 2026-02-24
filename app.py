@@ -5,6 +5,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import io
 
 # ==============================
 # PAGE SETUP
@@ -12,7 +13,6 @@ import seaborn as sns
 st.set_page_config(layout="wide")
 st.title("🔋 Li-S Battery Charge–Discharge Visualizer")
 
-# nicer scientific style
 plt.style.use("seaborn-v0_8-whitegrid")
 
 # ==============================
@@ -35,9 +35,6 @@ def load_excel(file):
 # ==============================
 if uploaded_file is not None:
 
-    # --------------------------
-    # LOAD DATA
-    # --------------------------
     df_record = load_excel(uploaded_file)
 
     st.subheader("Preview")
@@ -58,10 +55,7 @@ if uploaded_file is not None:
         errors="ignore"
     )
 
-    # remove rest steps
     df_record = df_record[~(df_record['StepStatus'] == 'R')]
-
-    # start from CCC region
     df_record = df_record[df_record['StepNo'] >= 3]
 
     # --------------------------
@@ -73,11 +67,10 @@ if uploaded_file is not None:
     # --------------------------
     # PLOTTING
     # --------------------------
-    fig, ax = plt.subplots(figsize=(10,6))
+    fig, ax = plt.subplots(figsize=(6,4))
 
     for df_subset, mode in [(df_record_c, 'CCC'), (df_record_d, 'CCD')]:
 
-        # different color maps for charge vs discharge
         cmap = plt.cm.plasma if mode == 'CCC' else plt.cm.viridis
 
         min_cycle = df_subset['CycleNo'].min()
@@ -85,7 +78,6 @@ if uploaded_file is not None:
 
         for cycle, group in df_subset.groupby('CycleNo'):
 
-            # normalize cycle index (safe scaling)
             if max_cycle == min_cycle:
                 norm_cycle = 0.5
             else:
@@ -108,11 +100,26 @@ if uploaded_file is not None:
 
     ax.grid(True, linestyle='--', linewidth=0.5, alpha=0.4)
 
-    # cleaner research-style axes
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    # --------------------------
-    # DISPLAY
-    # --------------------------
-    st.pyplot(fig)
+    # ==============================
+    # DOWNLOAD BUTTON
+    # ==============================
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+    buf.seek(0)
+
+    st.download_button(
+        label="📥 Download Plot (PNG)",
+        data=buf,
+        file_name="battery_charge_discharge.png",
+        mime="image/png"
+    )
+
+    # ==============================
+    # DISPLAY (CENTERED SMALLER FIGURE)
+    # ==============================
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.pyplot(fig)
