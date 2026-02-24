@@ -28,7 +28,7 @@ uploaded_file = st.file_uploader(
 # ==============================
 @st.cache_data
 def load_excel(file):
-    return pd.read_excel(file)
+    return pd.read_excel(file, header=2)
 
 # ==============================
 # MAIN APP FLOW
