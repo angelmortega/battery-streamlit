@@ -23,6 +23,12 @@ uploaded_file = st.file_uploader(
     type=["xls", "xlsx"]
 )
 
+view_mode = st.radio(
+    "Select curves to display:",
+    ["Both", "Charge (CCC)", "Discharge (CCD)"],
+    horizontal=True
+)
+
 # ==============================
 # LOAD FUNCTION (CACHED)
 # ==============================
@@ -69,27 +75,25 @@ if uploaded_file is not None:
     # --------------------------
     fig, ax = plt.subplots(figsize=(6,4))
 
-    for df_subset, mode in [(df_record_c, 'CCC'), (df_record_d, 'CCD')]:
 
-        cmap = plt.cm.plasma if mode == 'CCC' else plt.cm.viridis
+    plot_sets = []
 
-        min_cycle = df_subset['CycleNo'].min()
-        max_cycle = df_subset['CycleNo'].max()
+    if view_mode == "Both":
+        plot_sets = [(df_record_c, 'CCC'), (df_record_d, 'CCD')]
+    elif view_mode == "Charge (CCC)":
+        plot_sets = [(df_record_c, 'CCC')]
+    elif view_mode == "Discharge (CCD)":
+        plot_sets = [(df_record_d, 'CCD')]
 
+    for df_subset, mode in plot_sets:
         for cycle, group in df_subset.groupby('CycleNo'):
-
-            if max_cycle == min_cycle:
-                norm_cycle = 0.5
-            else:
-                norm_cycle = (cycle - min_cycle) / (max_cycle - min_cycle)
-
+            color = "red" if mode == "CCC" else "blue"
             ax.plot(
                 group['SpeCap/mAh/g'],
                 group['Voltage/V'],
-                color=cmap(norm_cycle),
+                color=color,
                 alpha=0.8,
-                linewidth=1.5
-            )
+                linewidth=1.5)
 
     # --------------------------
     # AXIS FORMATTING
